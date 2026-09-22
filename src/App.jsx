@@ -466,9 +466,15 @@ function GameHub({game,onClose,notify,onTrophies}) {
  return <div className="fullscreen-layer"><header><button onClick={onClose}><ChevronLeft/> Back</button><span>Game Hub</span><button onClick={onClose}><X/></button></header><div className="hub-hero" style={{background:game.background}}><div><span className="kicker">{game.tag}</span><h1>{game.title}</h1><p>{game.subtitle}</p><div className="hero-actions"><button className="primary" onClick={()=>notify('Launching '+game.title)}><Play/> Play</button><button className="secondary" onClick={onTrophies}><Trophy/> Trophies</button></div></div></div><div className="hub-grid"><article><Activity/><h3>Activities</h3><p>Continue your current objective and track progress.</p><button onClick={()=>notify('Activity resumed')}>Resume activity</button></article><article><Trophy/><h3>Trophy progress</h3><strong>37%</strong><p>12 bronze · 4 silver · 1 gold</p><button onClick={onTrophies}>View trophies</button></article><article><Users/><h3>Friends who play</h3><p>Nova, Kai and 6 other players.</p><button onClick={()=>notify('Game Base opened')}>View friends</button></article></div></div>;
 }
 function TrophyCenter({onClose}) {
- const ts=[['First Light','Bronze','Complete the opening mission',true],['Into the Rift','Silver','Reach the orbital gate',true],['No Star Unseen','Gold','Discover every system',false],['Beyond','Platinum','Earn all trophies',false]];
- return <div className="fullscreen-layer trophies-page"><header><button onClick={onClose}><ChevronLeft/> Back</button><span>Trophies</span><button onClick={onClose}><X/></button></header><div className="trophy-title"><Trophy size={52}/><div><span className="kicker">Stellar Divide</span><h1>17 / 46 trophies</h1><div className="progress-track"><span style={{width:'37%'}}/></div></div></div><div className="trophy-list">{ts.map(([n,t,d,u])=><article className={u?'earned':''} key={n}><div className="trophy-medal"><Trophy/></div><div><small>{t}</small><strong>{n}</strong><span>{d}</span></div><b>{u?'Earned':'Locked'}</b></article>)}</div></div>;
+ const [tab,setTab]=useState('Overview'); const [pin,setPin]=useState([]);
+ const ts=[['First Light','Bronze','Complete the opening mission',true,64],['Into the Rift','Silver','Reach the orbital gate',true,31],['No Star Unseen','Gold','Discover every system',false,8],['Speedrunner','Silver','Finish an activity under 10 minutes',false,14],['Beyond','Platinum','Earn all trophies',false,2]];
+ return <div className="fullscreen-layer trophies-page"><header><button onClick={onClose}><ChevronLeft/> Back</button><span>Trophies</span><button onClick={onClose}><X/></button></header><div className="trophies-wrap"><div className="trophy-title"><Trophy size={52}/><div><span className="kicker">Trophy Center 2.0</span><h1>17 / 46 trophies</h1><div className="progress-track"><span style={{width:'37%'}}/></div></div></div><div className="trophy-tabs">{['Overview','All trophies','Pinned','Stats'].map(x=><button className={tab===x?'active':''} onClick={()=>setTab(x)} key={x}>{x}</button>)}</div>
+ {tab==='Overview'&&<div className="trophy-dashboard"><article><Crown/><strong>Level 128</strong><span>12,480 trophy XP</span></article><article><Trophy/><strong>7 Platinum</strong><span>Top 18% this season</span></article><article><Sparkles/><strong>3 near completion</strong><span>Games above 80%</span></article><article><Users/><strong>+14 vs friends</strong><span>This month's trophy race</span></article></div>}
+ {(tab==='All trophies'||tab==='Pinned')&&<div className="trophy-list">{ts.filter(x=>tab!=='Pinned'||pin.includes(x[0])).map(([n,t,d,u,rarity])=><article className={u?'earned':''} key={n}><div className="trophy-medal"><Trophy/></div><div><small>{t} · {rarity}% earned</small><strong>{n}</strong><span>{d}</span></div><button className="trophy-pin" onClick={()=>setPin(p=>p.includes(n)?p.filter(x=>x!==n):[...p,n])}>{pin.includes(n)?'Unpin':'Pin'}</button><b>{u?'Earned':'Locked'}</b></article>)}</div>}
+ {tab==='Stats'&&<div className="trophy-stats-page"><div><strong>412</strong><span>Total trophies</span></div><div><strong>286</strong><span>Bronze</span></div><div><strong>91</strong><span>Silver</span></div><div><strong>28</strong><span>Gold</span></div><div><strong>7</strong><span>Platinum</span></div><div><strong>37%</strong><span>Average completion</span></div><article><h2>Trophy Journey</h2><p>PS6OS concept: a smart roadmap highlights trophies you're close to earning without revealing hidden trophy details.</p><button onClick={()=>setTab('All trophies')}>Build my roadmap</button></article></div>}
+ </div></div>;
 }
+
 function DownloadCenter({downloads,setDownloads,onClose}) {
  return <div className="fullscreen-layer downloads-page"><header><button onClick={onClose}><ChevronLeft/> Back</button><span>Downloads / Uploads</span><button onClick={onClose}><X/></button></header><div className="downloads-wrap"><span className="kicker">Queue</span><h1>Downloads</h1>{downloads.length===0?<p>No active downloads.</p>:downloads.map((d,i)=><article key={d.name}><div className="download-icon"><Download/></div><div><strong>{d.name}</strong><span>{d.progress>=100?'Ready to play':d.progress+'% · Downloading'}</span><div className="progress-track"><span style={{width:d.progress+'%'}}/></div></div><button onClick={()=>setDownloads(x=>x.filter((_,j)=>j!==i))}><Trash2/></button></article>)}</div></div>;
 }
@@ -556,46 +562,33 @@ function LegacyStorePage({ notify }) {
 }
 
 function PlusPage({ notify }) {
-  const monthly = [
-    ['Stellar Divide', 'Monthly Game', 'Included with Essential', games[0].cover],
-    ['Ghostline', 'Game Catalog', 'Included with Extra', games[1].cover],
-    ['Mythbreaker', 'Classics & Trials', 'Premium benefit', games[4].cover],
+  const [tab,setTab]=useState('Overview');
+  const [claimed,setClaimed]=useState(['Ghostline']);
+  const [plusList,setPlusList]=useState(['Stellar Divide']);
+  const [plan,setPlan]=useState('Premium');
+  const [boost,setBoost]=useState(true);
+  const [smartQueue,setSmartQueue]=useState(true);
+  const monthly=[
+    ['Stellar Divide','Monthly Game','Essential',games[0].cover],
+    ['Ghostline','Game Catalog','Extra',games[1].cover],
+    ['Neon Circuit','Day One Drop','Extra',games[2].cover],
+    ['Drift Protocol','Cloud Ready','Premium',games[3].cover],
+    ['Mythbreaker','Classics & Trials','Premium',games[4].cover],
   ];
-  return (
-    <section className="page-shell plus-page">
-      <div className="plus-hero">
-        <div className="plus-logo"><span>△</span><span>○</span><span>×</span><span>□</span><b>PLUS</b></div>
-        <span className="kicker">PlayStation Plus</span>
-        <h1>More games. More ways to play.</h1>
-        <p>Monthly games, online multiplayer, cloud storage, exclusive discounts, trials and a growing game catalog in one membership hub.</p>
-        <div className="hero-actions">
-          <button className="primary" onClick={() => notify('Membership options opened')}><Crown size={18}/> Explore plans</button>
-          <button className="secondary" onClick={() => notify('Benefits opened')}><Gift size={18}/> View benefits</button>
-        </div>
-      </div>
-      <div className="plus-benefits">
-        <article><Cloud/><strong>Cloud storage</strong><span>Keep saves synced across your consoles.</span></article>
-        <article><Users/><strong>Online multiplayer</strong><span>Play supported games together online.</span></article>
-        <article><ShoppingBag/><strong>Member discounts</strong><span>Extra savings on selected Store offers.</span></article>
-        <article><Gamepad2/><strong>Game trials</strong><span>Try selected games before you buy.</span></article>
-      </div>
-      <div className="section-heading plus-heading"><div><span className="kicker">Included now</span><h2>Explore your benefits</h2></div></div>
-      <div className="plus-catalog">
-        {monthly.map(([title,label,desc,cover]) => (
-          <button key={title} onClick={() => notify(title + ' opened')}>
-            <div className="plus-art" style={{background:cover}}><span className="plus-badge">PS+</span></div>
-            <small>{label}</small><strong>{title}</strong><span>{desc}</span>
-          </button>
-        ))}
-      </div>
-      <div className="plans">
-        <article><span>ESSENTIAL</span><h3>Play online & claim monthly games</h3><p>Online multiplayer, monthly games, cloud storage and exclusive discounts.</p><button onClick={() => notify('Essential selected')}>View Essential</button></article>
-        <article className="featured"><span>EXTRA</span><h3>Everything in Essential + Game Catalog</h3><p>Discover a large library of downloadable PS4, PS5 and concept PS6 titles.</p><button onClick={() => notify('Extra selected')}>View Extra</button></article>
-        <article><span>PREMIUM</span><h3>Extra + classics, trials & cloud features</h3><p>Get the widest set of benefits, classic titles and selected game trials.</p><button onClick={() => notify('Premium selected')}>View Premium</button></article>
-      </div>
-    </section>
-  );
+  const claim=(title)=>setClaimed(x=>x.includes(title)?x:[...x,title]);
+  return <section className="page-shell plus-page">
+    <div className="plus-hero"><div className="plus-logo"><span>△</span><span>○</span><span>×</span><span>□</span><b>PLUS</b></div><span className="kicker">{plan} member · 214 day streak</span><h1>Your PlayStation Plus universe.</h1><p>Catalog, monthly games, cloud play, trials, member rewards, social discovery and new PS6OS-exclusive ideas in one living hub.</p><div className="hero-actions"><button className="primary" onClick={()=>setTab('Plans')}><Crown/> Manage {plan}</button><button className="secondary" onClick={()=>setTab('Rewards')}><Gift/> Rewards · 2,840 pts</button></div></div>
+    <div className="plus-tabs">{['Overview','Catalog','Monthly','Cloud','Trials','Rewards','Plans'].map(x=><button className={tab===x?'active':''} onClick={()=>setTab(x)} key={x}>{x}</button>)}</div>
+    {tab==='Overview'&&<><div className="plus-stats"><article><Clock3/><strong>184h</strong><span>Catalog playtime</span></article><article><Gamepad2/><strong>27</strong><span>Plus games played</span></article><article><Trophy/><strong>146</strong><span>Trophies earned</span></article><article><Cloud/><strong>38</strong><span>Cloud saves synced</span></article></div>
+    <div className="plus-benefits mega"><button onClick={()=>setTab('Monthly')}><Gift/><strong>Monthly Games</strong><span>Claim this month's collection.</span></button><button onClick={()=>setTab('Catalog')}><LayoutGrid/><strong>Game Catalog</strong><span>Browse hundreds of titles.</span></button><button onClick={()=>setTab('Cloud')}><Cloud/><strong>Cloud Play</strong><span>Jump in without downloading.</span></button><button onClick={()=>setTab('Trials')}><Clock3/><strong>Game Trials</strong><span>Try selected releases first.</span></button><button onClick={()=>notify('Cloud saves synchronized')}><RefreshCw/><strong>Cloud Sync</strong><span>Sync saves across devices.</span></button><button onClick={()=>notify('Share Play session ready')}><Cast/><strong>Share Play</strong><span>Bring a friend into your session.</span></button><button onClick={()=>notify('Member deals opened')}><CircleDollarSign/><strong>Member Deals</strong><span>Extra Store discounts.</span></button><button onClick={()=>setTab('Rewards')}><Crown/><strong>Plus Rewards</strong><span>Earn points by playing.</span></button></div>
+    <div className="plus-next"><div><span className="kicker">PS6OS exclusive concept</span><h2>Plus Pulse</h2><p>A personal feed that turns your trophies, friends, genres and available playtime into a live “what should I play?” queue.</p><button className="primary" onClick={()=>notify('Plus Pulse refreshed your recommendations')}><Sparkles/> Refresh Pulse</button></div><div className="pulse-list">{['20 min · Continue Stellar Divide activity','Party ready · Ghostline with Nova','1 trophy away · Mythbreaker Gold','Leaving soon · Finish Neon Circuit'].map((x,i)=><button key={x} onClick={()=>notify('Pulse item '+(i+1)+' opened')}><span>{i+1}</span>{x}<ChevronRight/></button>)}</div></div></>}
+    {['Catalog','Monthly','Cloud','Trials'].includes(tab)&&<><div className="section-heading"><div><span className="kicker">{tab}</span><h2>{tab==='Monthly'?'Claim this month':tab==='Cloud'?'Play instantly':tab==='Trials'?'Try before you buy':'Your Plus catalog'}</h2></div></div><div className="plus-catalog">{monthly.filter(x=>tab!=='Monthly'||x[1]==='Monthly Game').map(([title,label,tier,cover])=><article key={title}><button className="plus-art" style={{background:cover}} onClick={()=>notify(title+' details opened')}><span className="plus-badge">PS+</span></button><small>{label} · {tier}</small><strong>{title}</strong><span>{claimed.includes(title)?'In your library':'Included with '+tier}</span><div className="plus-card-actions"><button onClick={()=>claim(title)}>{claimed.includes(title)?'Claimed':'Add to library'}</button><button onClick={()=>setPlusList(x=>x.includes(title)?x.filter(y=>y!==title):[...x,title])}><Heart size={15} fill={plusList.includes(title)?'currentColor':'none'}/></button></div></article>)}</div></>}
+    {tab==='Rewards'&&<div className="rewards-page"><div className="reward-balance"><Crown/><span>Plus Points</span><strong>2,840</strong><p>Earned from trophies, monthly challenges and trying new genres.</p></div><div className="challenge-grid">{[['Weekly Explorer','Play 3 different Plus games','+150'],['Trophy Hunter','Earn 5 trophies','+100'],['Party Player','Play with a friend','+75'],['Genre Quest','Try a genre you rarely play','+200']].map(x=><article key={x[0]}><Sparkles/><strong>{x[0]}</strong><span>{x[1]}</span><b>{x[2]} pts</b><button onClick={()=>notify(x[0]+' tracked')}>Track challenge</button></article>)}</div></div>}
+    {tab==='Plans'&&<div className="plans">{['Essential','Extra','Premium'].map((p,i)=><article className={plan===p?'featured':''} key={p}><span>{p.toUpperCase()}</span><h3>{i===0?'Monthly games & online play':i===1?'Essential + Game Catalog':'Everything + cloud, classics & trials'}</h3><p>{i===0?'Monthly games, multiplayer, cloud saves, Share Play and discounts.':i===1?'Adds the downloadable Game Catalog and more discovery.':'Adds cloud streaming, classics, trials and premium experiences.'}</p><button onClick={()=>{setPlan(p);notify(p+' membership selected')}}>{plan===p?'Current plan':'Switch to '+p}</button></article>)}</div>}
+    {tab==='Cloud'&&<div className="plus-labs"><h2>Cloud Intelligence</h2><label><div><strong>Smart Resume</strong><span>Predict which save/device you want to continue from.</span></div><input type="checkbox" checked={smartQueue} onChange={e=>setSmartQueue(e.target.checked)}/></label><label><div><strong>Adaptive Boost</strong><span>Concept feature that prioritizes responsiveness during cloud sessions.</span></div><input type="checkbox" checked={boost} onChange={e=>setBoost(e.target.checked)}/></label></div>}
+  </section>;
 }
+
 
 function SocialPage({ friends, notify, party, setParty }) {
   const [tab,setTab]=useState('Friends');
