@@ -55,6 +55,8 @@ import {
   RefreshCw,
   Trash2,
   Eye,
+  Crown,
+  Gift,
 } from 'lucide-react';
 
 const games = [
@@ -128,6 +130,7 @@ const navItems = [
   ['store', 'Store', ShoppingBag],
   ['social', 'Game Base', Users],
   ['media', 'Media', Film],
+  ['plus', 'PlayStation Plus', Crown],
 ];
 
 const settingSections = [
@@ -365,6 +368,7 @@ function App() {
         {activeNav === 'store' && <StorePage notify={notify} />}
         {activeNav === 'social' && <SocialPage friends={friends} notify={notify} />}
         {activeNav === 'media' && <MediaPage notify={notify} />}
+        {activeNav === 'plus' && <PlusPage notify={notify} />}
       </main>
 
       <button className="control-hint" onClick={() => setControlOpen(true)}>
@@ -444,6 +448,48 @@ function StorePage({ notify }) {
         {['New releases', 'PS6 exclusives', 'Deals', 'Coming soon'].map((label, i) => (
           <button key={label} onClick={() => notify(`${label} opened`)}><span className="store-art">{['✦','⬡','%','◌'][i]}</span><strong>{label}</strong><small>Explore collection</small></button>
         ))}
+      </div>
+    </section>
+  );
+}
+
+function PlusPage({ notify }) {
+  const monthly = [
+    ['Stellar Divide', 'Monthly Game', 'Included with Essential', games[0].cover],
+    ['Ghostline', 'Game Catalog', 'Included with Extra', games[1].cover],
+    ['Mythbreaker', 'Classics & Trials', 'Premium benefit', games[4].cover],
+  ];
+  return (
+    <section className="page-shell plus-page">
+      <div className="plus-hero">
+        <div className="plus-logo"><span>△</span><span>○</span><span>×</span><span>□</span><b>PLUS</b></div>
+        <span className="kicker">PlayStation Plus</span>
+        <h1>More games. More ways to play.</h1>
+        <p>Monthly games, online multiplayer, cloud storage, exclusive discounts, trials and a growing game catalog in one membership hub.</p>
+        <div className="hero-actions">
+          <button className="primary" onClick={() => notify('Membership options opened')}><Crown size={18}/> Explore plans</button>
+          <button className="secondary" onClick={() => notify('Benefits opened')}><Gift size={18}/> View benefits</button>
+        </div>
+      </div>
+      <div className="plus-benefits">
+        <article><Cloud/><strong>Cloud storage</strong><span>Keep saves synced across your consoles.</span></article>
+        <article><Users/><strong>Online multiplayer</strong><span>Play supported games together online.</span></article>
+        <article><ShoppingBag/><strong>Member discounts</strong><span>Extra savings on selected Store offers.</span></article>
+        <article><Gamepad2/><strong>Game trials</strong><span>Try selected games before you buy.</span></article>
+      </div>
+      <div className="section-heading plus-heading"><div><span className="kicker">Included now</span><h2>Explore your benefits</h2></div></div>
+      <div className="plus-catalog">
+        {monthly.map(([title,label,desc,cover]) => (
+          <button key={title} onClick={() => notify(title + ' opened')}>
+            <div className="plus-art" style={{background:cover}}><span className="plus-badge">PS+</span></div>
+            <small>{label}</small><strong>{title}</strong><span>{desc}</span>
+          </button>
+        ))}
+      </div>
+      <div className="plans">
+        <article><span>ESSENTIAL</span><h3>Play online & claim monthly games</h3><p>Online multiplayer, monthly games, cloud storage and exclusive discounts.</p><button onClick={() => notify('Essential selected')}>View Essential</button></article>
+        <article className="featured"><span>EXTRA</span><h3>Everything in Essential + Game Catalog</h3><p>Discover a large library of downloadable PS4, PS5 and concept PS6 titles.</p><button onClick={() => notify('Extra selected')}>View Extra</button></article>
+        <article><span>PREMIUM</span><h3>Extra + classics, trials & cloud features</h3><p>Get the widest set of benefits, classic titles and selected game trials.</p><button onClick={() => notify('Premium selected')}>View Premium</button></article>
       </div>
     </section>
   );
