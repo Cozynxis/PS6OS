@@ -181,6 +181,7 @@ function App() {
   const [gameHubOpen,setGameHubOpen] = useState(false);
   const [trophiesOpen,setTrophiesOpen] = useState(false);
   const [downloadOpen,setDownloadOpen] = useState(false);
+  const [systemApp,setSystemApp] = useState(null);
   const searchRef = useRef(null);
 
   const game = games[selectedGame];
@@ -417,6 +418,7 @@ function App() {
           party={party}
           openDownloads={()=>{setControlOpen(false);setDownloadOpen(true)}}
           openTrophies={()=>{setControlOpen(false);setTrophiesOpen(true)}}
+          openApp={(app)=>{setControlOpen(false);setSystemApp(app)}}
         />
       )}
       {notificationsOpen && <Notifications onClose={() => setNotificationsOpen(false)} notify={notify} />}
@@ -436,10 +438,28 @@ function App() {
       {gameHubOpen && <GameHub game={game} onClose={()=>setGameHubOpen(false)} notify={notify} onTrophies={()=>setTrophiesOpen(true)} />}
       {trophiesOpen && <TrophyCenter onClose={()=>setTrophiesOpen(false)} />}
       {downloadOpen && <DownloadCenter downloads={downloads} setDownloads={setDownloads} onClose={()=>setDownloadOpen(false)} />}
+      {systemApp && <SystemApp type={systemApp} onClose={()=>setSystemApp(null)} notify={notify} online={online} setOnline={setOnline} party={party} friends={friends} controllerBattery={controllerBattery} />}
 
       {toast && <div className="toast"><Check size={18} /> {toast}</div>}
     </div>
   );
+}
+
+function SystemApp({type,onClose,notify,online,setOnline,party,friends,controllerBattery}) {
+ const meta={
+  switcher:['Switcher',LayoutGrid],network:['Network',Wifi],notifications:['Notifications',Bell],party:['Party',Headphones],
+  gamebase:['Game Base',Users],music:['Music',Music2],accessories:['Accessories',Gamepad2]
+ };
+ const [title,Icon]=meta[type]||['System',Settings];
+ return <div className="fullscreen-layer system-app"><header><button onClick={onClose}><ChevronLeft/> Control Center</button><span>{title}</span><button onClick={onClose}><X/></button></header><div className="system-app-wrap"><div className="system-app-title"><Icon size={45}/><div><span className="kicker">Control Center</span><h1>{title}</h1></div></div>
+ {type==='switcher'&&<div className="switcher-grid">{games.slice(0,4).map((g,i)=><button key={g.id} onClick={()=>notify('Switched to '+g.title)}><div style={{background:g.cover}}/><strong>{g.title}</strong><span>{i===0?'Running':'Recently played'}</span></button>)}</div>}
+ {type==='network'&&<div className="system-card-list"><article><Wifi/><div><strong>Internet connection</strong><span>{online?'Connected · NAT Type 2':'Disconnected'}</span></div><button onClick={()=>setOnline(v=>!v)}>{online?'Disconnect':'Connect'}</button></article><article><Globe2/><div><strong>Connection test</strong><span>Download 842 Mbps · Upload 91 Mbps</span></div><button onClick={()=>notify('Connection test complete')}>Test</button></article><article><ShieldCheck/><div><strong>PlayStation Network</strong><span>{online?'All services available':'Offline'}</span></div></article></div>}
+ {type==='notifications'&&<div className="system-card-list"><article><Download/><div><strong>Download complete</strong><span>Stellar Divide update installed</span></div><button onClick={()=>notify('Notification dismissed')}>Dismiss</button></article><article><Trophy/><div><strong>Trophy earned</strong><span>Into the Rift · Silver</span></div></article><article><Users/><div><strong>Party invitation</strong><span>Nova invited you</span></div><button onClick={()=>notify('Party invitation accepted')}>Join</button></article></div>}
+ {type==='party'&&<><div className="party-app-hero"><Headphones size={38}/><h2>Late Night Gaming</h2><p>{party.join(' · ')}</p></div><div className="system-actions"><button onClick={()=>notify('Microphone toggled')}><Mic/> Microphone</button><button onClick={()=>notify('Share Screen started')}><Cast/> Share Screen</button><button onClick={()=>notify('Invite screen opened')}><UserPlus/> Invite</button></div></>}
+ {type==='gamebase'&&<div className="system-card-list">{friends.map(f=><article key={f.name}><div className="friend-avatar">{f.name[0]}</div><div><strong>{f.name}</strong><span>{f.game} · {f.status}</span></div><button onClick={()=>notify('Invite sent to '+f.name)}>Invite</button></article>)}</div>}
+ {type==='music'&&<><div className="now-playing"><div className="album-art"><Music2 size={55}/></div><div><span className="kicker">Now playing</span><h2>Console Waves</h2><p>PS6OS Soundtrack · 2:14 / 3:48</p><div className="music-controls"><button onClick={()=>notify('Previous track')}><ChevronLeft/></button><button onClick={()=>notify('Playback toggled')}><Pause/></button><button onClick={()=>notify('Next track')}><ChevronRight/></button></div></div></div><div className="progress-track"><span style={{width:'58%'}}/></div></>}
+ {type==='accessories'&&<div className="accessory-grid"><article><Gamepad2 size={54}/><span className="kicker">Wireless Controller</span><h2>DualSense Concept</h2><p>Battery {controllerBattery}% · Connected</p><button onClick={()=>notify('Controller settings opened')}>Controller settings</button></article><article><Headphones size={54}/><span className="kicker">Audio</span><h2>Wireless Headset</h2><p>Connected · 3D Audio ready</p><button onClick={()=>notify('Headset settings opened')}>Audio settings</button></article></div>}
+ </div></div>;
 }
 
 function GameHub({game,onClose,notify,onTrophies}) {
@@ -638,7 +658,7 @@ function MediaPage({ notify }) {
   );
 }
 
-function ControlCenter({ volume, setVolume, micMuted, setMicMuted, onClose, notify, onPower, downloads, online, setOnline, controllerBattery, party, openDownloads, openTrophies }) {
+function ControlCenter({ volume, setVolume, micMuted, setMicMuted, onClose, notify, onPower, downloads, online, setOnline, controllerBattery, party, openDownloads, openTrophies, openApp }) {
   return (
     <div className="panel-backdrop" onMouseDown={onClose}>
       <section className="control-center" onMouseDown={(e) => e.stopPropagation()}>
@@ -658,7 +678,7 @@ function ControlCenter({ volume, setVolume, micMuted, setMicMuted, onClose, noti
             ['Music', Music2],
             ['Accessories', Gamepad],
           ].map(([label, Icon]) => (
-            <button key={label} onClick={() => notify(`${label} opened`)}><Icon /><span>{label}</span></button>
+            <button key={label} onClick={() => label==='Downloads' ? openDownloads() : label==='Network' ? openApp('network') : label==='Switcher' ? openApp('switcher') : label==='Notifications' ? openApp('notifications') : label==='Party' ? openApp('party') : label==='Game Base' ? openApp('gamebase') : label==='Music' ? openApp('music') : label==='Accessories' ? openApp('accessories') : notify(label+' opened')}><Icon /><span>{label}</span></button>
           ))}
         </div>
         <div className="sound-row">
