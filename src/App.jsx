@@ -57,6 +57,13 @@ import {
   Eye,
   Crown,
   Gift,
+  Heart,
+  UserPlus,
+  WifiOff,
+  Smartphone,
+  Cast,
+  Pause,
+  CircleDollarSign,
 } from 'lucide-react';
 
 const games = [
@@ -142,6 +149,11 @@ const settingSections = [
   ['storage', 'Storage', HardDrive],
   ['accessibility', 'Accessibility', Accessibility],
   ['language', 'Language', Languages],
+  ['notifications', 'Notifications', Bell],
+  ['captures', 'Captures and Broadcasts', Eye],
+  ['controller', 'Accessories', Gamepad2],
+  ['remote', 'Remote Play', Smartphone],
+  ['privacy', 'Privacy and Security', ShieldCheck],
   ['about', 'About PS6OS', Info],
 ];
 
@@ -161,6 +173,11 @@ function App() {
   const [theme, setTheme] = useState('dark');
   const [settingSection, setSettingSection] = useState('system');
   const [friends, setFriends] = useState(initialFriends);
+  const [downloads, setDownloads] = useState([{name:'Ghostline Update 1.8',progress:68},{name:'Stellar Divide: Frontier Pack',progress:24}]);
+  const [wishlist, setWishlist] = useState([]);
+  const [party, setParty] = useState(['Levi']);
+  const [online, setOnline] = useState(true);
+  const [controllerBattery, setControllerBattery] = useState(82);
   const searchRef = useRef(null);
 
   const game = games[selectedGame];
@@ -365,8 +382,8 @@ function App() {
         )}
 
         {activeNav === 'library' && <LibraryPage notify={notify} />}
-        {activeNav === 'store' && <StorePage notify={notify} />}
-        {activeNav === 'social' && <SocialPage friends={friends} notify={notify} />}
+        {activeNav === 'store' && <StorePage notify={notify} wishlist={wishlist} setWishlist={setWishlist} downloads={downloads} setDownloads={setDownloads} />}
+        {activeNav === 'social' && <SocialPage friends={friends} notify={notify} party={party} setParty={setParty} />}
         {activeNav === 'media' && <MediaPage notify={notify} />}
         {activeNav === 'plus' && <PlusPage notify={notify} />}
       </main>
@@ -384,6 +401,11 @@ function App() {
           onClose={() => setControlOpen(false)}
           notify={notify}
           onPower={() => setPowerOpen(true)}
+          downloads={downloads}
+          online={online}
+          setOnline={setOnline}
+          controllerBattery={controllerBattery}
+          party={party}
         />
       )}
       {notificationsOpen && <Notifications onClose={() => setNotificationsOpen(false)} notify={notify} />}
@@ -437,7 +459,42 @@ function LibraryPage({ notify }) {
   );
 }
 
-function StorePage({ notify }) {
+function StorePage({ notify, wishlist, setWishlist, downloads, setDownloads }) {
+  const [tab,setTab] = useState('Featured');
+  const [selected,setSelected] = useState(null);
+  const products = games.map((g,i)=>({...g,price:[79.99,69.99,59.99,49.99,74.99][i],sale:i===1||i===3}));
+  const buy = (p) => {
+    if (!downloads.some(d=>d.name===p.title)) setDownloads(d=>[...d,{name:p.title,progress:1}]);
+    notify(`${p.title} added to downloads`);
+    setSelected(null);
+  };
+  return (
+    <section className="page-shell store-page">
+      <div className="page-title"><div><span className="kicker">PlayStation Store</span><h1>Discover something new</h1></div><ShoppingBag /></div>
+      <div className="store-tabs">{['Featured','Latest','Collections','Deals','Wishlist'].map(x=><button className={tab===x?'active':''} onClick={()=>setTab(x)} key={x}>{x}{x==='Wishlist'&&wishlist.length? ` (${wishlist.length})`:''}</button>)}</div>
+      <div className="store-hero">
+        <div><span>Featured on PS6OS</span><h2>Stellar Divide: Beyond the Frontier</h2><p>Explore the next chapter with a redesigned Store experience, wishlists and simulated downloads.</p><button className="primary" onClick={()=>setSelected(products[0])}>View game</button></div>
+      </div>
+      <div className="section-heading"><div><span className="kicker">{tab}</span><h2>{tab==='Wishlist'?'Your wishlist':'Games for you'}</h2></div></div>
+      <div className="store-products">
+        {(tab==='Wishlist'?products.filter(p=>wishlist.includes(p.id)):products).map(p=><article key={p.id}>
+          <button className="product-art" style={{background:p.cover}} onClick={()=>setSelected(p)}><span>{p.sale?'SAVE 25%':'PS6'}</span></button>
+          <div className="product-copy"><small>{p.tag}</small><strong>{p.title}</strong><span>€ {p.price.toFixed(2)}</span></div>
+          <button className={wishlist.includes(p.id)?'wish active':'wish'} onClick={()=>setWishlist(w=>w.includes(p.id)?w.filter(x=>x!==p.id):[...w,p.id])}><Heart size={17} fill={wishlist.includes(p.id)?'currentColor':'none'}/></button>
+        </article>)}
+      </div>
+      {selected&&<div className="modal-backdrop" onMouseDown={()=>setSelected(null)}><div className="product-modal" onMouseDown={e=>e.stopPropagation()}>
+        <button className="product-close" onClick={()=>setSelected(null)}><X/></button><div className="product-modal-art" style={{background:selected.cover}} />
+        <span className="kicker">PS6 · Digital</span><h2>{selected.title}</h2><p>{selected.subtitle} Includes cloud save support, activities and trophy tracking.</p>
+        <div className="product-price">€ {selected.price.toFixed(2)}</div>
+        <button className="primary wide" onClick={()=>buy(selected)}><Download size={18}/> Add to downloads</button>
+        <button className="secondary wide" onClick={()=>setWishlist(w=>w.includes(selected.id)?w.filter(x=>x!==selected.id):[...w,selected.id])}><Heart size={18}/> {wishlist.includes(selected.id)?'Remove from wishlist':'Add to wishlist'}</button>
+      </div></div>}
+    </section>
+  );
+}
+
+function LegacyStorePage({ notify }) {
   return (
     <section className="page-shell">
       <div className="page-title"><div><span className="kicker">PlayStation Store</span><h1>Discover something new</h1></div><ShoppingBag /></div>
@@ -446,7 +503,7 @@ function StorePage({ notify }) {
       </div>
       <div className="store-row">
         {['New releases', 'PS6 exclusives', 'Deals', 'Coming soon'].map((label, i) => (
-          <button key={label} onClick={() => notify(`${label} opened`)}><span className="store-art">{['✦','⬡','%','◌'][i]}</span><strong>{label}</strong><small>Explore collection</small></button>
+          <button key={label} onClick={() => label==='Network' ? (setOnline(!online),notify(online?'Network disconnected':'Network connected')) : notify(`${label} opened`)}><span className="store-art">{['✦','⬡','%','◌'][i]}</span><strong>{label}</strong><small>Explore collection</small></button>
         ))}
       </div>
     </section>
@@ -495,7 +552,23 @@ function PlusPage({ notify }) {
   );
 }
 
-function SocialPage({ friends, notify }) {
+function SocialPage({ friends, notify, party, setParty }) {
+  const [tab,setTab]=useState('Friends');
+  const join=(name)=>{ setParty(p=>p.includes(name)?p:[...p,name]); notify(name+' joined your party'); };
+  return (
+    <section className="page-shell">
+      <div className="page-title"><div><span className="kicker">Game Base</span><h1>Friends & Parties</h1></div><Users /></div>
+      <div className="gamebase-tabs">{['Friends','Parties','Messages'].map(x=><button className={tab===x?'active':''} onClick={()=>setTab(x)} key={x}>{x}</button>)}</div>
+      {tab==='Friends'&&<div className="social-layout"><article className="glass-card"><div className="card-head"><div><span className="kicker">Online now</span><h3>{friends.length} friends</h3></div><UserPlus/></div>
+        {friends.map(friend=><div className="friend-row big" key={friend.name}><div className="friend-avatar">{friend.name[0]}</div><div><strong>{friend.name}</strong><span>{friend.game} · {friend.status}</span></div><button onClick={()=>join(friend.name)}>Invite</button><button onClick={()=>notify('Profile opened: '+friend.name)}>Profile</button></div>)}
+      </article><article className="glass-card party-card"><div className="party-visual"><Headphones/></div><span className="kicker">Voice party</span><h2>{party.length>1?'Party active':'Start a party'}</h2><p>{party.join(' · ')}</p><button className="primary" onClick={()=>notify('Party voice chat '+(party.length>1?'opened':'created'))}>{party.length>1?'Open party':'Create party'}</button></article></div>}
+      {tab==='Parties'&&<div className="party-room"><div><Headphones size={42}/><span className="kicker">Your voice party</span><h2>Late Night Gaming</h2><p>Open party · Friends can join</p></div><div className="party-members">{party.map(n=><div key={n}><div className="friend-avatar">{n[0]}</div><strong>{n}</strong><span>{n==='Levi'?'Party owner':'Connected'}</span><button onClick={()=>n!=='Levi'&&setParty(p=>p.filter(x=>x!==n))}>{n==='Levi'?<Mic size={17}/>:<X size={17}/>}</button></div>)}</div><div className="party-actions"><button onClick={()=>notify('Microphone toggled')}><Mic/> Microphone</button><button onClick={()=>notify('Share Screen started')}><Cast/> Share Screen</button><button onClick={()=>notify('Party link copied')}><Plus/> Invite players</button></div></div>}
+      {tab==='Messages'&&<div className="messages-grid">{friends.map(f=><button onClick={()=>notify('Conversation opened with '+f.name)} key={f.name}><div className="friend-avatar">{f.name[0]}</div><div><strong>{f.name}</strong><span>Tap to open conversation</span></div><MessageCircle/></button>)}</div>}
+    </section>
+  );
+}
+
+function LegacySocialPage({ friends, notify }) {
   return (
     <section className="page-shell">
       <div className="page-title"><div><span className="kicker">Game Base</span><h1>Friends & Parties</h1></div><Users /></div>
@@ -540,7 +613,7 @@ function MediaPage({ notify }) {
   );
 }
 
-function ControlCenter({ volume, setVolume, micMuted, setMicMuted, onClose, notify, onPower }) {
+function ControlCenter({ volume, setVolume, micMuted, setMicMuted, onClose, notify, onPower, downloads, online, setOnline, controllerBattery, party }) {
   return (
     <div className="panel-backdrop" onMouseDown={onClose}>
       <section className="control-center" onMouseDown={(e) => e.stopPropagation()}>
@@ -552,8 +625,10 @@ function ControlCenter({ volume, setVolume, micMuted, setMicMuted, onClose, noti
         <div className="quick-grid">
           {[
             ['Switcher', LayoutGrid],
+            ['Network', online ? Wifi : WifiOff],
             ['Notifications', Bell],
             ['Downloads', Download],
+            ['Party', Headphones],
             ['Game Base', Users],
             ['Music', Music2],
             ['Accessories', Gamepad],
@@ -567,6 +642,7 @@ function ControlCenter({ volume, setVolume, micMuted, setMicMuted, onClose, noti
           <strong>{volume}</strong>
           <button className={micMuted ? 'toggle active' : 'toggle'} onClick={() => setMicMuted((v) => !v)}><Mic size={18}/>{micMuted ? 'Muted' : 'Mic'}</button>
         </div>
+        <div className="quick-status"><div><Download/><span><strong>{downloads?.length||0}</strong> downloads</span></div><div><Gamepad2/><span><strong>{controllerBattery}%</strong> controller</span></div><div><Headphones/><span><strong>{party?.length||1}</strong> in party</span></div></div>
         <div className="control-bottom">
           <div><Wifi/><span>Internet</span><strong>Connected</strong></div>
           <div><Gamepad2/><span>Controller</span><strong>87%</strong></div>
