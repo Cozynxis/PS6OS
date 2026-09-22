@@ -178,14 +178,23 @@ function App() {
   const [party, setParty] = useState(['Levi']);
   const [online, setOnline] = useState(true);
   const [controllerBattery, setControllerBattery] = useState(82);
+  const [gameHubOpen,setGameHubOpen] = useState(false);
+  const [trophiesOpen,setTrophiesOpen] = useState(false);
+  const [downloadOpen,setDownloadOpen] = useState(false);
   const searchRef = useRef(null);
 
   const game = games[selectedGame];
 
   useEffect(() => {
+    const saved = localStorage.getItem('ps6os-settings');
+    if (saved) { try { const x=JSON.parse(saved); if(x.theme)setTheme(x.theme); if(Number.isFinite(x.volume))setVolume(x.volume); if(typeof x.micMuted==='boolean')setMicMuted(x.micMuted); } catch{} }
     const timer = setTimeout(() => setBooting(false), 2100);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(()=>{ localStorage.setItem('ps6os-settings',JSON.stringify({theme,volume,micMuted})); },[theme,volume,micMuted]);
+
+  useEffect(()=>{ const id=setInterval(()=>setDownloads(ds=>ds.map(d=>({...d,progress:Math.min(100,d.progress+(d.progress<100?1:0))}))),900); return()=>clearInterval(id); },[]);
 
   useEffect(() => {
     const onKey = (event) => {
@@ -283,7 +292,7 @@ function App() {
                 <p>{game.subtitle}</p>
                 <div className="hero-actions">
                   <button className="primary" onClick={() => notify(`Launching ${game.title}…`)}><Play size={18} fill="currentColor" /> Play</button>
-                  <button className="secondary" onClick={() => notify('Game hub opened')}>View Game Hub</button>
+                  <button className="secondary" onClick={() => setGameHubOpen(true)}>View Game Hub</button>
                   <button className="icon-button" onClick={() => notify('More options opened')}>•••</button>
                 </div>
                 {game.progress > 0 && (
@@ -406,6 +415,8 @@ function App() {
           setOnline={setOnline}
           controllerBattery={controllerBattery}
           party={party}
+          openDownloads={()=>{setControlOpen(false);setDownloadOpen(true)}}
+          openTrophies={()=>{setControlOpen(false);setTrophiesOpen(true)}}
         />
       )}
       {notificationsOpen && <Notifications onClose={() => setNotificationsOpen(false)} notify={notify} />}
@@ -422,10 +433,24 @@ function App() {
         />
       )}
       {powerOpen && <PowerModal onClose={() => setPowerOpen(false)} notify={notify} />}
+      {gameHubOpen && <GameHub game={game} onClose={()=>setGameHubOpen(false)} notify={notify} onTrophies={()=>setTrophiesOpen(true)} />}
+      {trophiesOpen && <TrophyCenter onClose={()=>setTrophiesOpen(false)} />}
+      {downloadOpen && <DownloadCenter downloads={downloads} setDownloads={setDownloads} onClose={()=>setDownloadOpen(false)} />}
 
       {toast && <div className="toast"><Check size={18} /> {toast}</div>}
     </div>
   );
+}
+
+function GameHub({game,onClose,notify,onTrophies}) {
+ return <div className="fullscreen-layer"><header><button onClick={onClose}><ChevronLeft/> Back</button><span>Game Hub</span><button onClick={onClose}><X/></button></header><div className="hub-hero" style={{background:game.background}}><div><span className="kicker">{game.tag}</span><h1>{game.title}</h1><p>{game.subtitle}</p><div className="hero-actions"><button className="primary" onClick={()=>notify('Launching '+game.title)}><Play/> Play</button><button className="secondary" onClick={onTrophies}><Trophy/> Trophies</button></div></div></div><div className="hub-grid"><article><Activity/><h3>Activities</h3><p>Continue your current objective and track progress.</p><button onClick={()=>notify('Activity resumed')}>Resume activity</button></article><article><Trophy/><h3>Trophy progress</h3><strong>37%</strong><p>12 bronze · 4 silver · 1 gold</p><button onClick={onTrophies}>View trophies</button></article><article><Users/><h3>Friends who play</h3><p>Nova, Kai and 6 other players.</p><button onClick={()=>notify('Game Base opened')}>View friends</button></article></div></div>;
+}
+function TrophyCenter({onClose}) {
+ const ts=[['First Light','Bronze','Complete the opening mission',true],['Into the Rift','Silver','Reach the orbital gate',true],['No Star Unseen','Gold','Discover every system',false],['Beyond','Platinum','Earn all trophies',false]];
+ return <div className="fullscreen-layer trophies-page"><header><button onClick={onClose}><ChevronLeft/> Back</button><span>Trophies</span><button onClick={onClose}><X/></button></header><div className="trophy-title"><Trophy size={52}/><div><span className="kicker">Stellar Divide</span><h1>17 / 46 trophies</h1><div className="progress-track"><span style={{width:'37%'}}/></div></div></div><div className="trophy-list">{ts.map(([n,t,d,u])=><article className={u?'earned':''} key={n}><div className="trophy-medal"><Trophy/></div><div><small>{t}</small><strong>{n}</strong><span>{d}</span></div><b>{u?'Earned':'Locked'}</b></article>)}</div></div>;
+}
+function DownloadCenter({downloads,setDownloads,onClose}) {
+ return <div className="fullscreen-layer downloads-page"><header><button onClick={onClose}><ChevronLeft/> Back</button><span>Downloads / Uploads</span><button onClick={onClose}><X/></button></header><div className="downloads-wrap"><span className="kicker">Queue</span><h1>Downloads</h1>{downloads.length===0?<p>No active downloads.</p>:downloads.map((d,i)=><article key={d.name}><div className="download-icon"><Download/></div><div><strong>{d.name}</strong><span>{d.progress>=100?'Ready to play':d.progress+'% · Downloading'}</span><div className="progress-track"><span style={{width:d.progress+'%'}}/></div></div><button onClick={()=>setDownloads(x=>x.filter((_,j)=>j!==i))}><Trash2/></button></article>)}</div></div>;
 }
 
 function BootScreen() {
@@ -503,7 +528,7 @@ function LegacyStorePage({ notify }) {
       </div>
       <div className="store-row">
         {['New releases', 'PS6 exclusives', 'Deals', 'Coming soon'].map((label, i) => (
-          <button key={label} onClick={() => label==='Network' ? (setOnline(!online),notify(online?'Network disconnected':'Network connected')) : notify(`${label} opened`)}><span className="store-art">{['✦','⬡','%','◌'][i]}</span><strong>{label}</strong><small>Explore collection</small></button>
+          <button key={label} onClick={() => label==='Network' ? (setOnline(!online),notify(online?'Network disconnected':'Network connected')) : label==='Downloads' ? openDownloads() : label==='Switcher' ? notify('Switcher opened') : label==='Party' ? notify('Party card opened') : notify(`${label} opened`)}><span className="store-art">{['✦','⬡','%','◌'][i]}</span><strong>{label}</strong><small>Explore collection</small></button>
         ))}
       </div>
     </section>
@@ -613,7 +638,7 @@ function MediaPage({ notify }) {
   );
 }
 
-function ControlCenter({ volume, setVolume, micMuted, setMicMuted, onClose, notify, onPower, downloads, online, setOnline, controllerBattery, party }) {
+function ControlCenter({ volume, setVolume, micMuted, setMicMuted, onClose, notify, onPower, downloads, online, setOnline, controllerBattery, party, openDownloads, openTrophies }) {
   return (
     <div className="panel-backdrop" onMouseDown={onClose}>
       <section className="control-center" onMouseDown={(e) => e.stopPropagation()}>
