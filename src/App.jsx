@@ -64,6 +64,9 @@ import {
   Cast,
   Pause,
   CircleDollarSign,
+  Folder,
+  Pin,
+  Maximize2,
 } from 'lucide-react';
 
 const games = [
@@ -182,6 +185,9 @@ function App() {
   const [trophiesOpen,setTrophiesOpen] = useState(false);
   const [downloadOpen,setDownloadOpen] = useState(false);
   const [systemApp,setSystemApp] = useState(null);
+  const [homeMode,setHomeMode] = useState('games');
+  const [homeMenu,setHomeMenu] = useState(false);
+  const [pinnedGames,setPinnedGames] = useState(['stellar','ghost']);
   const searchRef = useRef(null);
 
   const game = games[selectedGame];
@@ -286,22 +292,25 @@ function App() {
       <main className="content">
         {activeNav === 'home' && (
           <>
-            <section className="ps4-home">
-              <div className="ps4-game-row">
-                {games.map((item,index)=>(
-                  <button key={item.id} className={index===selectedGame?'ps4-tile selected':'ps4-tile'} onMouseEnter={()=>setSelectedGame(index)} onFocus={()=>setSelectedGame(index)} onClick={()=>setSelectedGame(index)}>
-                    <div className="ps4-cover" style={{background:item.cover}}><span className="ps4-platform">PS6</span>{item.progress>0&&<i style={{width:item.progress+'%'}}/>}</div>
-                    <strong>{item.title}</strong>
-                  </button>
-                ))}
-                <button className="ps4-tile utility" onClick={()=>setActiveNav('library')}><div className="ps4-cover"><Library size={48}/></div><strong>Library</strong></button>
-                <button className="ps4-tile utility" onClick={()=>setActiveNav('plus')}><div className="ps4-cover plus-tile"><Crown size={48}/></div><strong>PlayStation Plus</strong></button>
+            <section className="console-home">
+              <div className="console-home-tabs"><button className={homeMode==='games'?'active':''} onClick={()=>setHomeMode('games')}>Games</button><button className={homeMode==='media'?'active':''} onClick={()=>setHomeMode('media')}>Media</button><span>{games.length} installed</span></div>
+              {homeMode==='games'?<>
+              <div className="console-tile-row">
+                {games.map((item,index)=><button key={item.id} className={index===selectedGame?'console-tile selected':'console-tile'} onMouseEnter={()=>setSelectedGame(index)} onFocus={()=>setSelectedGame(index)} onClick={()=>setSelectedGame(index)} onDoubleClick={()=>notify('Launching '+item.title+'…')}>
+                  <div className="console-cover" style={{background:item.cover}}><span className="console-badge">PS6</span>{pinnedGames.includes(item.id)&&<span className="pin-badge"><Pin size={11}/></span>}<div className="tile-progress"><i style={{width:item.progress+'%'}}/></div></div>
+                  <strong>{item.title}</strong><small>{index===selectedGame?(item.progress?item.progress+'% complete':'Ready to play'):item.tag}</small>
+                </button>)}
+                <button className="console-tile system-tile" onClick={()=>setActiveNav('library')}><div className="console-cover"><Library/><span>{games.length}</span></div><strong>Game Library</strong><small>Your collection</small></button>
+                <button className="console-tile system-tile" onClick={()=>setActiveNav('plus')}><div className="console-cover plus-system"><Crown/></div><strong>PlayStation Plus</strong><small>Premium</small></button>
+                <button className="console-tile system-tile" onClick={()=>setActiveNav('store')}><div className="console-cover store-system"><ShoppingBag/></div><strong>PlayStation Store</strong><small>Discover</small></button>
               </div>
-              <div className="ps4-detail">
-                <div className="ps4-detail-copy"><div className="eyebrow"><Sparkles size={15}/> {game.tag}</div><h1>{game.title}</h1><p>{game.subtitle}</p><div className="hero-actions"><button className="primary" onClick={()=>notify('Launching '+game.title+'…')}><Play size={18} fill="currentColor"/> Start</button><button className="secondary" onClick={()=>setGameHubOpen(true)}>Overview</button><button className="secondary" onClick={()=>setTrophiesOpen(true)}><Trophy size={17}/> Trophies</button><button className="icon-button" onClick={()=>notify('Game options opened')}>•••</button></div></div>
-                <div className="ps4-side-info"><div><Trophy/><span><strong>37%</strong>Trophies</span></div><div><Clock3/><span><strong>18h</strong>Played</span></div><div><Cloud/><span><strong>Synced</strong>Cloud save</span></div></div>
+              <div className="console-focus">
+                <div className="focus-copy"><div className="eyebrow"><span className="live-dot"/> {game.tag}</div><h1>{game.title}</h1><p>{game.subtitle}</p><div className="focus-meta"><span><Clock3/>18h played</span><span><Trophy/>37% trophies</span><span><Cloud/>Save synced</span><span><Users/>3 friends play</span></div><div className="hero-actions"><button className="primary big" onClick={()=>notify('Launching '+game.title+'…')}><Play fill="currentColor"/> Play</button><button className="secondary" onClick={()=>setGameHubOpen(true)}>Game Hub</button><button className="secondary square" onClick={()=>setHomeMenu(v=>!v)}>•••</button></div>
+                {homeMenu&&<div className="home-context"><button onClick={()=>{setPinnedGames(p=>p.includes(game.id)?p.filter(x=>x!==game.id):[...p,game.id]);setHomeMenu(false)}}><Pin/> {pinnedGames.includes(game.id)?'Unpin from Home':'Pin to Home'}</button><button onClick={()=>{setTrophiesOpen(true);setHomeMenu(false)}}><Trophy/> Trophies</button><button onClick={()=>notify('Update check complete')}><RefreshCw/> Check for update</button><button onClick={()=>notify('Save data synced')}><Cloud/> Sync saved data</button><button onClick={()=>notify('Game information opened')}><Info/> Information</button></div>}</div>
+                <aside className="focus-activity"><div className="activity-art" style={{background:game.cover}}><span>ACTIVITY</span></div><div><small>Continue activity</small><strong>Into the Rift</strong><span>Reach the orbital gate</span><div className="progress-track"><i style={{width:game.progress+'%'}}/></div><button onClick={()=>notify('Activity resumed')}><Play size={15}/> Resume</button></div></aside>
               </div>
-              <div className="ps4-whats-new"><span>What's New</span><button onClick={()=>notify('Activity resumed')}><Activity/><div><strong>Continue: Into the Rift</strong><small>Reach the orbital gate · {game.progress}% story progress</small></div><ChevronRight/></button><button onClick={()=>setActiveNav('social')}><Users/><div><strong>Friends playing now</strong><small>Nova, Kai and 2 others are online</small></div><ChevronRight/></button></div>
+              <div className="home-cards-row"><button onClick={()=>setTrophiesOpen(true)}><Trophy/><div><small>Next trophy</small><strong>Into the Rift</strong><span>31% of players earned this</span></div><ChevronRight/></button><button onClick={()=>setActiveNav('social')}><Users/><div><small>Friends</small><strong>Nova is playing</strong><span>Joinable session</span></div><ChevronRight/></button><button onClick={()=>setDownloadOpen(true)}><Download/><div><small>Downloads</small><strong>{downloads.filter(d=>d.progress<100).length} active</strong><span>{downloads[0]?.progress||100}% current download</span></div><ChevronRight/></button><button onClick={()=>setActiveNav('plus')}><Crown/><div><small>PlayStation Plus</small><strong>Monthly games</strong><span>New games available</span></div><ChevronRight/></button></div>
+              </>:<div className="media-home"><div><Film size={56}/><h1>Your media, one place.</h1><p>Continue videos, music and captures without leaving Home.</p><button className="primary" onClick={()=>setActiveNav('media')}>Open Media</button></div><div className="media-tiles"><button onClick={()=>setActiveNav('media')}><Film/><strong>Media Gallery</strong></button><button onClick={()=>setSystemApp('music')}><Music2/><strong>Music</strong></button><button onClick={()=>notify('Capture gallery opened')}><Eye/><strong>Captures</strong></button><button onClick={()=>notify('Broadcast center opened')}><Radio/><strong>Broadcasts</strong></button></div></div>}
             </section>
 
             <section className="dashboard-grid">
