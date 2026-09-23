@@ -286,71 +286,22 @@ function App() {
       <main className="content">
         {activeNav === 'home' && (
           <>
-            <section className="hero">
-              <div className="hero-copy">
-                <div className="eyebrow"><Sparkles size={16} /> {game.tag}</div>
-                <h1>{game.title}</h1>
-                <p>{game.subtitle}</p>
-                <div className="hero-actions">
-                  <button className="primary" onClick={() => notify(`Launching ${game.title}…`)}><Play size={18} fill="currentColor" /> Play</button>
-                  <button className="secondary" onClick={() => setGameHubOpen(true)}>View Game Hub</button>
-                  <button className="icon-button" onClick={() => notify('More options opened')}>•••</button>
-                </div>
-                {game.progress > 0 && (
-                  <div className="progress-wrap">
-                    <div className="progress-meta"><span>Story progress</span><strong>{game.progress}%</strong></div>
-                    <div className="progress-track"><span style={{ width: `${game.progress}%` }} /></div>
-                  </div>
-                )}
-              </div>
-
-              <div className="hero-stats">
-                <article>
-                  <Trophy />
-                  <div><strong>37%</strong><span>Trophies</span></div>
-                </article>
-                <article>
-                  <Clock3 />
-                  <div><strong>18h</strong><span>Played</span></div>
-                </article>
-                <article>
-                  <Cloud />
-                  <div><strong>Synced</strong><span>Cloud save</span></div>
-                </article>
-              </div>
-            </section>
-
-            <section className="rail-section">
-              <div className="section-heading">
-                <div>
-                  <span className="kicker">Your games</span>
-                  <h2>Jump back in</h2>
-                </div>
-                <div className="rail-controls">
-                  <button onClick={() => setSelectedGame((i) => Math.max(0, i - 1))}><ChevronLeft /></button>
-                  <button onClick={() => setSelectedGame((i) => Math.min(games.length - 1, i + 1))}><ChevronRight /></button>
-                </div>
-              </div>
-
-              <div className="game-rail">
-                {games.map((item, index) => (
-                  <button
-                    key={item.id}
-                    className={index === selectedGame ? 'game-card selected' : 'game-card'}
-                    onMouseEnter={() => setSelectedGame(index)}
-                    onFocus={() => setSelectedGame(index)}
-                    onClick={() => setSelectedGame(index)}
-                    style={{ background: item.cover }}
-                  >
-                    <div className="game-card-shine" />
-                    <span className="card-tag">{item.tag}</span>
-                    <div className="card-bottom">
-                      <strong>{item.title}</strong>
-                      <small>{item.progress ? `${item.progress}% complete` : 'Ready to play'}</small>
-                    </div>
+            <section className="ps4-home">
+              <div className="ps4-game-row">
+                {games.map((item,index)=>(
+                  <button key={item.id} className={index===selectedGame?'ps4-tile selected':'ps4-tile'} onMouseEnter={()=>setSelectedGame(index)} onFocus={()=>setSelectedGame(index)} onClick={()=>setSelectedGame(index)}>
+                    <div className="ps4-cover" style={{background:item.cover}}><span className="ps4-platform">PS6</span>{item.progress>0&&<i style={{width:item.progress+'%'}}/>}</div>
+                    <strong>{item.title}</strong>
                   </button>
                 ))}
+                <button className="ps4-tile utility" onClick={()=>setActiveNav('library')}><div className="ps4-cover"><Library size={48}/></div><strong>Library</strong></button>
+                <button className="ps4-tile utility" onClick={()=>setActiveNav('plus')}><div className="ps4-cover plus-tile"><Crown size={48}/></div><strong>PlayStation Plus</strong></button>
               </div>
+              <div className="ps4-detail">
+                <div className="ps4-detail-copy"><div className="eyebrow"><Sparkles size={15}/> {game.tag}</div><h1>{game.title}</h1><p>{game.subtitle}</p><div className="hero-actions"><button className="primary" onClick={()=>notify('Launching '+game.title+'…')}><Play size={18} fill="currentColor"/> Start</button><button className="secondary" onClick={()=>setGameHubOpen(true)}>Overview</button><button className="secondary" onClick={()=>setTrophiesOpen(true)}><Trophy size={17}/> Trophies</button><button className="icon-button" onClick={()=>notify('Game options opened')}>•••</button></div></div>
+                <div className="ps4-side-info"><div><Trophy/><span><strong>37%</strong>Trophies</span></div><div><Clock3/><span><strong>18h</strong>Played</span></div><div><Cloud/><span><strong>Synced</strong>Cloud save</span></div></div>
+              </div>
+              <div className="ps4-whats-new"><span>What's New</span><button onClick={()=>notify('Activity resumed')}><Activity/><div><strong>Continue: Into the Rift</strong><small>Reach the orbital gate · {game.progress}% story progress</small></div><ChevronRight/></button><button onClick={()=>setActiveNav('social')}><Users/><div><strong>Friends playing now</strong><small>Nova, Kai and 2 others are online</small></div><ChevronRight/></button></div>
             </section>
 
             <section className="dashboard-grid">
