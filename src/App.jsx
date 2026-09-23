@@ -189,6 +189,7 @@ function App() {
   const [homeMenu,setHomeMenu] = useState(false);
   const [pinnedGames,setPinnedGames] = useState(['stellar','ghost']);
   const [detailPage,setDetailPage] = useState(null);
+  const [profileData,setProfileData] = useState(()=>{try{return JSON.parse(localStorage.getItem('ps6os-profile'))||{name:'Levi',about:'Exploring new worlds.',status:'Online',plus:true,admin:true,badge:'Founder',gradient:'aurora',frame:'prism',animation:'pulse',accent:'blue',showGames:true,showTrophies:true,showPlaytime:true}}catch{return {name:'Levi',about:'Exploring new worlds.',status:'Online',plus:true,admin:true,badge:'Founder',gradient:'aurora',frame:'prism',animation:'pulse',accent:'blue',showGames:true,showTrophies:true,showPlaytime:true}}});
   const searchRef = useRef(null);
 
   const game = games[selectedGame];
@@ -201,6 +202,7 @@ function App() {
   }, []);
 
   useEffect(()=>{ localStorage.setItem('ps6os-settings',JSON.stringify({theme,volume,micMuted})); },[theme,volume,micMuted]);
+  useEffect(()=>{localStorage.setItem('ps6os-profile',JSON.stringify(profileData));},[profileData]);
 
   useEffect(()=>{ const id=setInterval(()=>setDownloads(ds=>ds.map(d=>({...d,progress:Math.min(100,d.progress+(d.progress<100?1:0))}))),900); return()=>clearInterval(id); },[]);
 
@@ -400,7 +402,7 @@ function App() {
       {trophiesOpen && <TrophyCenter onClose={()=>setTrophiesOpen(false)} />}
       {downloadOpen && <DownloadCenter downloads={downloads} setDownloads={setDownloads} onClose={()=>setDownloadOpen(false)} />}
       {systemApp && <SystemApp type={systemApp} onClose={()=>setSystemApp(null)} notify={notify} online={online} setOnline={setOnline} party={party} friends={friends} controllerBattery={controllerBattery} openDetail={setDetailPage} />}
-      {detailPage && <FeaturePage type={detailPage} game={game} friends={friends} onClose={()=>setDetailPage(null)} notify={notify} />}
+      {detailPage && <FeaturePage type={detailPage} game={game} friends={friends} onClose={()=>setDetailPage(null)} notify={notify} openPage={setDetailPage} profileData={profileData} setProfileData={setProfileData} />}
 
       {toast && <div className="toast"><Check size={18} /> {toast}</div>}
     </div>
@@ -424,7 +426,7 @@ function SystemApp({type,onClose,notify,online,setOnline,party,friends,controlle
  </div></div>;
 }
 
-function FeaturePage({type,game,friends,onClose,notify}) {
+function FeaturePage({type,game,friends,onClose,notify,openPage,profileData,setProfileData}) {
  const meta={
   'captures':['Captures & Media Gallery',Eye,'Your screenshots, video clips and recent captures.'],
   'broadcasts':['Broadcast Center',Radio,'Manage live broadcasts, viewers and sharing settings.'],
@@ -436,6 +438,7 @@ function FeaturePage({type,game,friends,onClose,notify}) {
   'controller-settings':['Controller Settings',Gamepad2,'Wireless controller, haptics, triggers and button preferences.'],
   'headset-settings':['Headset & 3D Audio',Headphones,'Output device, microphone, balance and spatial audio.'],
   'profile':['Your Profile',UserRound,'Profile, presence, games and account activity.'],
+  'edit-profile':['Edit Profile',Palette,'Customize your complete PS6OS identity. Plus members unlock premium profile cosmetics.'],
   'profile-trophies':['Profile Trophies',Trophy,'Your trophy collection across every game.'],
   'online-status':['Online Status',Wifi,'Choose how friends see your current presence.'],
   'switch-user':['Switch User',Users,'Choose another local PS6OS user.'],
@@ -452,13 +455,30 @@ function FeaturePage({type,game,friends,onClose,notify}) {
  {type==='saved-data'&&<><div className="cloud-summary"><Cloud/><div><strong>Cloud storage</strong><span>38 saves synced · Last sync just now</span></div><b>2.4 GB / 100 GB</b></div><div className="system-card-list">{games.slice(0,4).map(g=><article key={g.id}><Cloud/><div><strong>{g.title}</strong><span>Console and cloud copies match</span></div><button onClick={()=>notify(g.title+' synchronized')}>Sync</button></article>)}</div></>}
  {type==='game-info'&&<div className="game-info-panel"><div style={{background:game.cover}}/><div><span className="kicker">{game.tag}</span><h2>{game.title}</h2><FeatureRows rows={[[game.subtitle,'Version 1.08'],['Installed size','84.6 GB'],['Last played','Today'],['Play time','18 hours']]} /></div></div>}
  {['controller-settings','headset-settings'].includes(type)&&<><div className="device-hero"><Icon size={65}/><div><h2>{type==='controller-settings'?'Wireless Controller':'Wireless Headset'}</h2><p>Connected · {type==='controller-settings'?'82% battery':'74% battery'}</p></div></div><FeatureRows rows={type==='controller-settings'?[['Vibration Intensity','Strong'],['Trigger Effect','Strong'],['Controller Speaker','70%'],['Communication Method','USB / Bluetooth']]:[['3D Audio','Enabled'],['Microphone Level','78%'],['Sidetone Volume','Medium'],['Audio Format','Linear PCM']]} enabled={enabled} setEnabled={setEnabled}/></>}
- {type==='profile'&&<><div className="profile-full"><div className="profile-avatar giant">L</div><div><h2>Levi</h2><p>Online · Level 128 · 412 trophies</p><button onClick={()=>notify('Profile edit mode opened')}>Edit Profile</button></div></div><div className="trophy-dashboard"><article><Gamepad2/><strong>36 games</strong><span>Played</span></article><article><Trophy/><strong>412 trophies</strong><span>Earned</span></article><article><Users/><strong>{friends.length} friends</strong><span>Connected</span></article><article><Clock3/><strong>684h</strong><span>Total playtime</span></article></div></>}
+ {type==='profile'&&<><div className={'profile-full profile-theme '+profileData.gradient+' '+profileData.animation}><div className={'profile-avatar giant frame-'+profileData.frame}>{profileData.name[0]?.toUpperCase()}</div><div><div className="profile-name-line"><h2>{profileData.name}</h2>{profileData.plus&&<span className="profile-plus">PLUS</span>}{profileData.admin&&<span className="admin-badge">ADMIN</span>}</div><p>{profileData.status} · Level 128 · 412 trophies</p><p>{profileData.about}</p><div className="profile-badges"><span>◆ {profileData.badge}</span>{profileData.admin&&<><span>★ Founder</span><span>♛ Admin</span><span>✦ Early Access</span><span>⬡ Trophy Elite</span></>}</div><button onClick={()=>openPage('edit-profile')}><Palette/> Edit entire profile</button></div></div><div className="trophy-dashboard">{profileData.showGames&&<article><Gamepad2/><strong>36 games</strong><span>Played</span></article>}<article><Trophy/><strong>412 trophies</strong><span>Earned</span></article><article><Users/><strong>{friends.length} friends</strong><span>Connected</span></article>{profileData.showPlaytime&&<article><Clock3/><strong>684h</strong><span>Total playtime</span></article>}</div></>}
+ {type==='edit-profile'&&<ProfileEditor profile={profileData} setProfile={setProfileData} notify={notify}/>} 
  {type==='profile-trophies'&&<div className="system-card-list">{games.map((g,i)=><article key={g.id}><Trophy/><div><strong>{g.title}</strong><span>{[37,62,81,19,8][i]}% · {[17,29,38,9,4][i]} trophies</span></div><button onClick={()=>notify(g.title+' trophies opened')}>View</button></article>)}</div>}
  {type==='online-status'&&<div className="status-options">{['Online','Busy','Appear Offline'].map(x=><button className={status===x?'active':''} onClick={()=>setStatus(x)} key={x}><span className={'presence '+x.toLowerCase().replace(' ','-')}/><div><strong>{x}</strong><small>{x==='Online'?'Friends can see your activity':x==='Busy'?'Show that you may not respond':'Appear offline to other players'}</small></div>{status===x&&<Check/>}</button>)}</div>}
  {type==='switch-user'&&<div className="user-switch-grid">{['Levi','Guest','Add User'].map((x,i)=><button key={x} onClick={()=>notify(i===2?'Add user setup opened':'Switched to '+x)}><div className="profile-avatar giant">{i===2?<Plus/>:x[0]}</div><strong>{x}</strong><span>{i===0?'Signed in':'Local user'}</span></button>)}</div>}
  {type==='logout'&&<div className="confirm-page"><Power size={60}/><h2>Log out of PS6OS?</h2><p>Games and apps will close for this user.</p><button className="primary" onClick={()=>notify('Logout simulated')}>Log Out</button><button className="secondary" onClick={onClose}>Cancel</button></div>}
  </div></div>;
 }
+function ProfileEditor({profile,setProfile,notify}){
+ const update=(key,value)=>setProfile(p=>({...p,[key]:value}));
+ const plusOnly=(fn)=>profile.plus?fn():notify('PlayStation Plus required for this customization');
+ const badges=['Founder','Admin','Early Access','Trophy Elite','Beta Tester','Community','Collector','Speedrunner'];
+ return <div className="profile-editor">
+  <div className={'profile-preview '+profile.gradient+' '+profile.animation}><div className={'profile-avatar preview frame-'+profile.frame}>{profile.name[0]?.toUpperCase()||'P'}</div><div><div className="profile-name-line"><h2>{profile.name||'Player'}</h2>{profile.plus&&<span className="profile-plus animated-plus">PLUS</span>}{profile.admin&&<span className="admin-badge">ADMIN</span>}</div><p>{profile.about}</p><div className="profile-badges"><span>◆ {profile.badge}</span>{profile.admin&&<span>♛ All badges unlocked</span>}</div></div></div>
+  <div className="editor-grid"><section><h3>Basic profile</h3><label>Online ID<input value={profile.name} maxLength="16" onChange={e=>update('name',e.target.value)}/></label><label>About me<textarea maxLength="120" value={profile.about} onChange={e=>update('about',e.target.value)}/></label><label>Status<select value={profile.status} onChange={e=>update('status',e.target.value)}><option>Online</option><option>Busy</option><option>Appear Offline</option><option>Looking to Play</option></select></label></section>
+  <section><h3>Badges</h3><p className="editor-note">Admin account: every badge is already unlocked.</p><div className="choice-grid badges">{badges.map(x=><button className={profile.badge===x?'active':''} onClick={()=>update('badge',x)} key={x}>◆ <span>{x}</span></button>)}</div></section>
+  <section className="plus-editor"><div className="editor-title"><h3>Plus Profile Studio</h3><span className="profile-plus">PLUS</span></div><p className="editor-note">Exclusive profile cosmetics for PlayStation Plus members.</p><h4>Animated backgrounds</h4><div className="choice-grid">{['aurora','cosmic','sunset','ocean','neon','royal'].map(x=><button className={profile.gradient===x?'active':''} onClick={()=>plusOnly(()=>update('gradient',x))} key={x}><i className={'swatch '+x}/><span>{x}</span>{!profile.plus&&<Lock size={13}/>}</button>)}</div><h4>Profile frames</h4><div className="choice-grid">{['prism','gold','neon','galaxy','minimal','trophy'].map(x=><button className={profile.frame===x?'active':''} onClick={()=>plusOnly(()=>update('frame',x))} key={x}><span className={'frame-demo frame-'+x}>L</span><b>{x}</b>{!profile.plus&&<Lock size={13}/>}</button>)}</div><h4>Profile animations</h4><div className="choice-grid">{['pulse','float','shimmer','orbit','none'].map(x=><button className={profile.animation===x?'active':''} onClick={()=>plusOnly(()=>update('animation',x))} key={x}><Sparkles/><span>{x}</span>{!profile.plus&&<Lock size={13}/>}</button>)}</div></section>
+  <section><h3>Profile layout & privacy</h3>{[['showGames','Show games'],['showTrophies','Show trophy showcase'],['showPlaytime','Show playtime']].map(([k,l])=><label className="editor-toggle" key={k}><span>{l}</span><button className={profile[k]?'mini-switch on':'mini-switch'} onClick={()=>update(k,!profile[k])}><i/></button></label>)}</section>
+  <section><h3>Membership preview</h3><div className="membership-card"><Crown/><div><strong>{profile.plus?'PlayStation Plus Premium':'Standard Profile'}</strong><span>{profile.plus?'Animated Plus nameplate · premium gradients · frames · animations · extended profile layouts':'Upgrade to unlock premium profile customization.'}</span></div></div><button className="demo-membership" onClick={()=>update('plus',!profile.plus)}>Demo: turn Plus {profile.plus?'off':'on'}</button></section>
+  <section><h3>Admin collection</h3><p className="editor-note">This local concept account has admin access, so all profile badges are available. Plus-only cosmetics still follow the Plus membership toggle.</p><div className="admin-collection">{badges.map(x=><span key={x}>◆ {x}</span>)}</div></section></div>
+  <div className="editor-save"><button className="primary" onClick={()=>notify('Profile customization saved')}><Check/> Save profile</button><span>Changes are also saved locally on this device.</span></div>
+ </div>
+}
+
 function FeatureRows({rows,enabled,setEnabled}){return <div className="feature-rows">{rows.map((r,i)=><div key={i}><div><strong>{r[0]}</strong><span>{r[1]}</span></div>{setEnabled?<button className={enabled?'mini-switch on':'mini-switch'} onClick={()=>setEnabled(v=>!v)}><i/></button>:<ChevronRight/>}</div>)}</div>}
 
 function GameHub({game,onClose,notify,onTrophies}) {
