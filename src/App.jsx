@@ -188,6 +188,7 @@ function App() {
   const [homeMode,setHomeMode] = useState('games');
   const [homeMenu,setHomeMenu] = useState(false);
   const [pinnedGames,setPinnedGames] = useState(['stellar','ghost']);
+  const [detailPage,setDetailPage] = useState(null);
   const searchRef = useRef(null);
 
   const game = games[selectedGame];
@@ -306,11 +307,11 @@ function App() {
               </div>
               <div className="console-focus">
                 <div className="focus-copy"><div className="eyebrow"><span className="live-dot"/> {game.tag}</div><h1>{game.title}</h1><p>{game.subtitle}</p><div className="focus-meta"><span><Clock3/>18h played</span><span><Trophy/>37% trophies</span><span><Cloud/>Save synced</span><span><Users/>3 friends play</span></div><div className="hero-actions"><button className="primary big" onClick={()=>notify('Launching '+game.title+'…')}><Play fill="currentColor"/> Play</button><button className="secondary" onClick={()=>setGameHubOpen(true)}>Game Hub</button><button className="secondary square" onClick={()=>setHomeMenu(v=>!v)}>•••</button></div>
-                {homeMenu&&<div className="home-context"><button onClick={()=>{setPinnedGames(p=>p.includes(game.id)?p.filter(x=>x!==game.id):[...p,game.id]);setHomeMenu(false)}}><Pin/> {pinnedGames.includes(game.id)?'Unpin from Home':'Pin to Home'}</button><button onClick={()=>{setTrophiesOpen(true);setHomeMenu(false)}}><Trophy/> Trophies</button><button onClick={()=>notify('Update check complete')}><RefreshCw/> Check for update</button><button onClick={()=>notify('Save data synced')}><Cloud/> Sync saved data</button><button onClick={()=>notify('Game information opened')}><Info/> Information</button></div>}</div>
+                {homeMenu&&<div className="home-context"><button onClick={()=>{setPinnedGames(p=>p.includes(game.id)?p.filter(x=>x!==game.id):[...p,game.id]);setHomeMenu(false)}}><Pin/> {pinnedGames.includes(game.id)?'Unpin from Home':'Pin to Home'}</button><button onClick={()=>{setTrophiesOpen(true);setHomeMenu(false)}}><Trophy/> Trophies</button><button onClick={()=>setDetailPage('updates')}><RefreshCw/> Check for update</button><button onClick={()=>setDetailPage('saved-data')}><Cloud/> Sync saved data</button><button onClick={()=>setDetailPage('game-info')}><Info/> Information</button></div>}</div>
                 <aside className="focus-activity"><div className="activity-art" style={{background:game.cover}}><span>ACTIVITY</span></div><div><small>Continue activity</small><strong>Into the Rift</strong><span>Reach the orbital gate</span><div className="progress-track"><i style={{width:game.progress+'%'}}/></div><button onClick={()=>notify('Activity resumed')}><Play size={15}/> Resume</button></div></aside>
               </div>
               <div className="home-cards-row"><button onClick={()=>setTrophiesOpen(true)}><Trophy/><div><small>Next trophy</small><strong>Into the Rift</strong><span>31% of players earned this</span></div><ChevronRight/></button><button onClick={()=>setActiveNav('social')}><Users/><div><small>Friends</small><strong>Nova is playing</strong><span>Joinable session</span></div><ChevronRight/></button><button onClick={()=>setDownloadOpen(true)}><Download/><div><small>Downloads</small><strong>{downloads.filter(d=>d.progress<100).length} active</strong><span>{downloads[0]?.progress||100}% current download</span></div><ChevronRight/></button><button onClick={()=>setActiveNav('plus')}><Crown/><div><small>PlayStation Plus</small><strong>Monthly games</strong><span>New games available</span></div><ChevronRight/></button></div>
-              </>:<div className="media-home"><div><Film size={56}/><h1>Your media, one place.</h1><p>Continue videos, music and captures without leaving Home.</p><button className="primary" onClick={()=>setActiveNav('media')}>Open Media</button></div><div className="media-tiles"><button onClick={()=>setActiveNav('media')}><Film/><strong>Media Gallery</strong></button><button onClick={()=>setSystemApp('music')}><Music2/><strong>Music</strong></button><button onClick={()=>notify('Capture gallery opened')}><Eye/><strong>Captures</strong></button><button onClick={()=>notify('Broadcast center opened')}><Radio/><strong>Broadcasts</strong></button></div></div>}
+              </>:<div className="media-home"><div><Film size={56}/><h1>Your media, one place.</h1><p>Continue videos, music and captures without leaving Home.</p><button className="primary" onClick={()=>setActiveNav('media')}>Open Media</button></div><div className="media-tiles"><button onClick={()=>setActiveNav('media')}><Film/><strong>Media Gallery</strong></button><button onClick={()=>setSystemApp('music')}><Music2/><strong>Music</strong></button><button onClick={()=>setDetailPage('captures')}><Eye/><strong>Captures</strong></button><button onClick={()=>setDetailPage('broadcasts')}><Radio/><strong>Broadcasts</strong></button></div></div>}
             </section>
 
             <section className="dashboard-grid">
@@ -354,7 +355,7 @@ function App() {
         {activeNav === 'library' && <LibraryPage notify={notify} />}
         {activeNav === 'store' && <StorePage notify={notify} wishlist={wishlist} setWishlist={setWishlist} downloads={downloads} setDownloads={setDownloads} />}
         {activeNav === 'social' && <SocialPage friends={friends} notify={notify} party={party} setParty={setParty} />}
-        {activeNav === 'media' && <MediaPage notify={notify} />}
+        {activeNav === 'media' && <MediaPage notify={notify} openPage={setDetailPage} />}
         {activeNav === 'plus' && <PlusPage notify={notify} />}
       </main>
 
@@ -382,7 +383,7 @@ function App() {
         />
       )}
       {notificationsOpen && <Notifications onClose={() => setNotificationsOpen(false)} notify={notify} />}
-      {profileOpen && <ProfilePanel onClose={() => setProfileOpen(false)} notify={notify} />}
+      {profileOpen && <ProfilePanel onClose={() => setProfileOpen(false)} notify={notify} openPage={setDetailPage} />}
       {searchOpen && <SearchOverlay inputRef={searchRef} onClose={() => setSearchOpen(false)} notify={notify} />}
       {settingsOpen && (
         <SettingsModal
@@ -398,14 +399,15 @@ function App() {
       {gameHubOpen && <GameHub game={game} onClose={()=>setGameHubOpen(false)} notify={notify} onTrophies={()=>setTrophiesOpen(true)} />}
       {trophiesOpen && <TrophyCenter onClose={()=>setTrophiesOpen(false)} />}
       {downloadOpen && <DownloadCenter downloads={downloads} setDownloads={setDownloads} onClose={()=>setDownloadOpen(false)} />}
-      {systemApp && <SystemApp type={systemApp} onClose={()=>setSystemApp(null)} notify={notify} online={online} setOnline={setOnline} party={party} friends={friends} controllerBattery={controllerBattery} />}
+      {systemApp && <SystemApp type={systemApp} onClose={()=>setSystemApp(null)} notify={notify} online={online} setOnline={setOnline} party={party} friends={friends} controllerBattery={controllerBattery} openDetail={setDetailPage} />}
+      {detailPage && <FeaturePage type={detailPage} game={game} friends={friends} onClose={()=>setDetailPage(null)} notify={notify} />}
 
       {toast && <div className="toast"><Check size={18} /> {toast}</div>}
     </div>
   );
 }
 
-function SystemApp({type,onClose,notify,online,setOnline,party,friends,controllerBattery}) {
+function SystemApp({type,onClose,notify,online,setOnline,party,friends,controllerBattery,openDetail}) {
  const meta={
   switcher:['Switcher',LayoutGrid],network:['Network',Wifi],notifications:['Notifications',Bell],party:['Party',Headphones],
   gamebase:['Game Base',Users],music:['Music',Music2],accessories:['Accessories',Gamepad2]
@@ -418,9 +420,46 @@ function SystemApp({type,onClose,notify,online,setOnline,party,friends,controlle
  {type==='party'&&<><div className="party-app-hero"><Headphones size={38}/><h2>Late Night Gaming</h2><p>{party.join(' · ')}</p></div><div className="system-actions"><button onClick={()=>notify('Microphone toggled')}><Mic/> Microphone</button><button onClick={()=>notify('Share Screen started')}><Cast/> Share Screen</button><button onClick={()=>notify('Invite screen opened')}><UserPlus/> Invite</button></div></>}
  {type==='gamebase'&&<div className="system-card-list">{friends.map(f=><article key={f.name}><div className="friend-avatar">{f.name[0]}</div><div><strong>{f.name}</strong><span>{f.game} · {f.status}</span></div><button onClick={()=>notify('Invite sent to '+f.name)}>Invite</button></article>)}</div>}
  {type==='music'&&<><div className="now-playing"><div className="album-art"><Music2 size={55}/></div><div><span className="kicker">Now playing</span><h2>Console Waves</h2><p>PS6OS Soundtrack · 2:14 / 3:48</p><div className="music-controls"><button onClick={()=>notify('Previous track')}><ChevronLeft/></button><button onClick={()=>notify('Playback toggled')}><Pause/></button><button onClick={()=>notify('Next track')}><ChevronRight/></button></div></div></div><div className="progress-track"><span style={{width:'58%'}}/></div></>}
- {type==='accessories'&&<div className="accessory-grid"><article><Gamepad2 size={54}/><span className="kicker">Wireless Controller</span><h2>DualSense Concept</h2><p>Battery {controllerBattery}% · Connected</p><button onClick={()=>notify('Controller settings opened')}>Controller settings</button></article><article><Headphones size={54}/><span className="kicker">Audio</span><h2>Wireless Headset</h2><p>Connected · 3D Audio ready</p><button onClick={()=>notify('Headset settings opened')}>Audio settings</button></article></div>}
+ {type==='accessories'&&<div className="accessory-grid"><article><Gamepad2 size={54}/><span className="kicker">Wireless Controller</span><h2>DualSense Concept</h2><p>Battery {controllerBattery}% · Connected</p><button onClick={()=>openDetail('controller-settings')}>Controller settings</button></article><article><Headphones size={54}/><span className="kicker">Audio</span><h2>Wireless Headset</h2><p>Connected · 3D Audio ready</p><button onClick={()=>openDetail('headset-settings')}>Audio settings</button></article></div>}
  </div></div>;
 }
+
+function FeaturePage({type,game,friends,onClose,notify}) {
+ const meta={
+  'captures':['Captures & Media Gallery',Eye,'Your screenshots, video clips and recent captures.'],
+  'broadcasts':['Broadcast Center',Radio,'Manage live broadcasts, viewers and sharing settings.'],
+  'music-library':['Music Library',Music2,'Soundtracks, playlists and recently played music.'],
+  'movies':['Movies & TV',Film,'Continue watching and browse your entertainment apps.'],
+  'updates':['Game Updates',RefreshCw,'Check installed games for updates and manage automatic updates.'],
+  'saved-data':['Saved Data & Cloud',Cloud,'Manage console saves, cloud copies and synchronization.'],
+  'game-info':['Game Information',Info,'Version, install size, play history and game details.'],
+  'controller-settings':['Controller Settings',Gamepad2,'Wireless controller, haptics, triggers and button preferences.'],
+  'headset-settings':['Headset & 3D Audio',Headphones,'Output device, microphone, balance and spatial audio.'],
+  'profile':['Your Profile',UserRound,'Profile, presence, games and account activity.'],
+  'profile-trophies':['Profile Trophies',Trophy,'Your trophy collection across every game.'],
+  'online-status':['Online Status',Wifi,'Choose how friends see your current presence.'],
+  'switch-user':['Switch User',Users,'Choose another local PS6OS user.'],
+  'logout':['Log Out',Power,'Sign out of the current PS6OS user.']
+ }; const [title,Icon,desc]=meta[type]||['Feature',Settings,'PS6OS feature'];
+ const [enabled,setEnabled]=useState(true); const [status,setStatus]=useState('Online');
+ const gallery=['Screenshot 01','Victory Clip','Stellar Vista','Party Moment','Trophy Capture','Photo Mode'];
+ return <div className="fullscreen-layer feature-page"><header><button onClick={onClose}><ChevronLeft/> Back</button><span>{title}</span><button onClick={onClose}><X/></button></header><div className="feature-wrap"><div className="feature-heading"><Icon size={48}/><div><span className="kicker">PS6OS</span><h1>{title}</h1><p>{desc}</p></div></div>
+ {type==='captures'&&<><div className="feature-toolbar"><button onClick={()=>notify('New capture created')}><Plus/> New capture</button><button onClick={()=>notify('Capture storage optimized')}><HardDrive/> Manage storage</button></div><div className="capture-grid">{gallery.map((x,i)=><button key={x} onClick={()=>notify(x+' opened')}><div style={{background:games[i%games.length].cover}}><Eye/></div><strong>{x}</strong><span>{i%2?'Video clip · 0:32':'Screenshot · 4K'}</span></button>)}</div></>}
+ {type==='broadcasts'&&<><div className="broadcast-hero"><Radio/><div><span className="kicker">You are offline</span><h2>Start a broadcast</h2><p>Choose your game, microphone, party audio and overlay before going live.</p></div><button onClick={()=>notify('Broadcast setup ready')}>Set up broadcast</button></div><FeatureRows rows={[['Microphone','Include microphone audio'],['Party Audio','Share party voice chat'],['Viewer Comments','Show comments while broadcasting']]} enabled={enabled} setEnabled={setEnabled}/></>}
+ {type==='music-library'&&<><div className="music-library-grid">{['Console Waves','Night Drive','Orbital Dreams','Focus Mode'].map((x,i)=><button key={x} onClick={()=>notify('Playing '+x)}><div><Music2/></div><strong>{x}</strong><span>{i+3} tracks</span></button>)}</div></>}
+ {type==='movies'&&<div className="media-service-grid">{['Continue Watching','Movies','TV Shows','Streaming Apps'].map((x,i)=><button key={x} onClick={()=>notify(x+' opened')}><Film/><strong>{x}</strong><span>{i===0?'2 items in progress':'Browse collection'}</span></button>)}</div>}
+ {type==='updates'&&<div className="system-card-list">{games.map((g,i)=><article key={g.id}><RefreshCw/><div><strong>{g.title}</strong><span>{i===1?'Update 1.8 available · 4.2 GB':'Latest version installed'}</span></div><button onClick={()=>notify(i===1?'Update added to downloads':'No update available')}>{i===1?'Download':'Check'}</button></article>)}</div>}
+ {type==='saved-data'&&<><div className="cloud-summary"><Cloud/><div><strong>Cloud storage</strong><span>38 saves synced · Last sync just now</span></div><b>2.4 GB / 100 GB</b></div><div className="system-card-list">{games.slice(0,4).map(g=><article key={g.id}><Cloud/><div><strong>{g.title}</strong><span>Console and cloud copies match</span></div><button onClick={()=>notify(g.title+' synchronized')}>Sync</button></article>)}</div></>}
+ {type==='game-info'&&<div className="game-info-panel"><div style={{background:game.cover}}/><div><span className="kicker">{game.tag}</span><h2>{game.title}</h2><FeatureRows rows={[[game.subtitle,'Version 1.08'],['Installed size','84.6 GB'],['Last played','Today'],['Play time','18 hours']]} /></div></div>}
+ {['controller-settings','headset-settings'].includes(type)&&<><div className="device-hero"><Icon size={65}/><div><h2>{type==='controller-settings'?'Wireless Controller':'Wireless Headset'}</h2><p>Connected · {type==='controller-settings'?'82% battery':'74% battery'}</p></div></div><FeatureRows rows={type==='controller-settings'?[['Vibration Intensity','Strong'],['Trigger Effect','Strong'],['Controller Speaker','70%'],['Communication Method','USB / Bluetooth']]:[['3D Audio','Enabled'],['Microphone Level','78%'],['Sidetone Volume','Medium'],['Audio Format','Linear PCM']]} enabled={enabled} setEnabled={setEnabled}/></>}
+ {type==='profile'&&<><div className="profile-full"><div className="profile-avatar giant">L</div><div><h2>Levi</h2><p>Online · Level 128 · 412 trophies</p><button onClick={()=>notify('Profile edit mode opened')}>Edit Profile</button></div></div><div className="trophy-dashboard"><article><Gamepad2/><strong>36 games</strong><span>Played</span></article><article><Trophy/><strong>412 trophies</strong><span>Earned</span></article><article><Users/><strong>{friends.length} friends</strong><span>Connected</span></article><article><Clock3/><strong>684h</strong><span>Total playtime</span></article></div></>}
+ {type==='profile-trophies'&&<div className="system-card-list">{games.map((g,i)=><article key={g.id}><Trophy/><div><strong>{g.title}</strong><span>{[37,62,81,19,8][i]}% · {[17,29,38,9,4][i]} trophies</span></div><button onClick={()=>notify(g.title+' trophies opened')}>View</button></article>)}</div>}
+ {type==='online-status'&&<div className="status-options">{['Online','Busy','Appear Offline'].map(x=><button className={status===x?'active':''} onClick={()=>setStatus(x)} key={x}><span className={'presence '+x.toLowerCase().replace(' ','-')}/><div><strong>{x}</strong><small>{x==='Online'?'Friends can see your activity':x==='Busy'?'Show that you may not respond':'Appear offline to other players'}</small></div>{status===x&&<Check/>}</button>)}</div>}
+ {type==='switch-user'&&<div className="user-switch-grid">{['Levi','Guest','Add User'].map((x,i)=><button key={x} onClick={()=>notify(i===2?'Add user setup opened':'Switched to '+x)}><div className="profile-avatar giant">{i===2?<Plus/>:x[0]}</div><strong>{x}</strong><span>{i===0?'Signed in':'Local user'}</span></button>)}</div>}
+ {type==='logout'&&<div className="confirm-page"><Power size={60}/><h2>Log out of PS6OS?</h2><p>Games and apps will close for this user.</p><button className="primary" onClick={()=>notify('Logout simulated')}>Log Out</button><button className="secondary" onClick={onClose}>Cancel</button></div>}
+ </div></div>;
+}
+function FeatureRows({rows,enabled,setEnabled}){return <div className="feature-rows">{rows.map((r,i)=><div key={i}><div><strong>{r[0]}</strong><span>{r[1]}</span></div>{setEnabled?<button className={enabled?'mini-switch on':'mini-switch'} onClick={()=>setEnabled(v=>!v)}><i/></button>:<ChevronRight/>}</div>)}</div>}
 
 function GameHub({game,onClose,notify,onTrophies}) {
  return <div className="fullscreen-layer"><header><button onClick={onClose}><ChevronLeft/> Back</button><span>Game Hub</span><button onClick={onClose}><X/></button></header><div className="hub-hero" style={{background:game.background}}><div><span className="kicker">{game.tag}</span><h1>{game.title}</h1><p>{game.subtitle}</p><div className="hero-actions"><button className="primary" onClick={()=>notify('Launching '+game.title)}><Play/> Play</button><button className="secondary" onClick={onTrophies}><Trophy/> Trophies</button></div></div></div><div className="hub-grid"><article><Activity/><h3>Activities</h3><p>Continue your current objective and track progress.</p><button onClick={()=>notify('Activity resumed')}>Resume activity</button></article><article><Trophy/><h3>Trophy progress</h3><strong>37%</strong><p>12 bronze · 4 silver · 1 gold</p><button onClick={onTrophies}>View trophies</button></article><article><Users/><h3>Friends who play</h3><p>Nova, Kai and 6 other players.</p><button onClick={()=>notify('Game Base opened')}>View friends</button></article></div></div>;
@@ -591,7 +630,7 @@ function LegacySocialPage({ friends, notify }) {
   );
 }
 
-function MediaPage({ notify }) {
+function MediaPage({ notify, openPage }) {
   return (
     <section className="page-shell">
       <div className="page-title"><div><span className="kicker">Entertainment</span><h1>Media</h1></div><Film /></div>
@@ -602,7 +641,7 @@ function MediaPage({ notify }) {
           ['Live', Radio, 'Streams and broadcasts'],
           ['Capture Gallery', Eye, 'Screenshots and clips'],
         ].map(([label, Icon, text]) => (
-          <button className="media-tile" key={label} onClick={() => notify(`${label} opened`)}>
+          <button className="media-tile" key={label} onClick={() => openPage(label==='Music'?'music-library':label==='Movies & TV'?'movies':label==='Live'?'broadcasts':'captures')}>
             <Icon size={38}/><strong>{label}</strong><span>{text}</span>
           </button>
         ))}
@@ -666,13 +705,13 @@ function Notifications({ onClose, notify }) {
   );
 }
 
-function ProfilePanel({ onClose, notify }) {
+function ProfilePanel({ onClose, notify, openPage }) {
   return (
     <aside className="side-panel profile-panel">
       <div className="side-head"><div><span className="kicker">Account</span><h2>Levi</h2></div><button onClick={onClose}><X/></button></div>
       <div className="profile-hero"><div className="profile-avatar">L</div><strong>Levi</strong><span>Online · PS6OS</span></div>
       <div className="profile-stats"><div><strong>128</strong><span>Level</span></div><div><strong>412</strong><span>Trophies</span></div><div><strong>36</strong><span>Games</span></div></div>
-      {['Profile', 'Trophies', 'Online status', 'Switch user', 'Log out'].map((x) => <button className="menu-line" key={x} onClick={() => notify(`${x} selected`)}>{x}<ChevronRight size={17}/></button>)}
+      {['Profile', 'Trophies', 'Online status', 'Switch user', 'Log out'].map((x) => <button className="menu-line" key={x} onClick={() => {onClose(); openPage(x==='Profile'?'profile':x==='Trophies'?'profile-trophies':x==='Online status'?'online-status':x==='Switch user'?'switch-user':'logout')}}>{x}<ChevronRight size={17}/></button>)}
     </aside>
   );
 }
